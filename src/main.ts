@@ -1,18 +1,12 @@
+// src/main.ts
+
 import Phaser from "phaser";
+import { HEIGHT, WIDTH } from "./game/constants";
+import { TicTacToeScene } from "./scenes/TicTacToeScene";
 
-const config: Phaser.Types.Core.GameConfig = {
+new Phaser.Game({
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  backgroundColor: "#222222",
-  scene: {
-    create() {
-      this.add.text(100, 100, "Hello Phaser!", {
-        color: "#ffffff",
-        fontSize: "32px",
-      });
-    },
-  },
-};
-
-new Phaser.Game(config);
+  width: WIDTH,
+  height: HEIGHT,
+  scene: [TicTacToeScene],
+});
