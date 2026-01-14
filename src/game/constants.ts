@@ -24,6 +24,7 @@ export const PADDING_BOTTOM = 120;
 // 画面サイズ（5x5が“薄く”見える前提で、全体は描画する）
 export const BOARD_PX = BOARD_SIZE * CELL_SIZE;
 export const WIDTH = BOARD_PX;
+export const PADDING_LEFT = Math.floor((WIDTH - BOARD_PX) / 2);
 export const HEIGHT = BOARD_PX + PADDING_TOP + PADDING_BOTTOM;
 
 // CPUの「外側に置いた瞬間の演出」条件

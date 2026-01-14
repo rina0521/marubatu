@@ -1,6 +1,14 @@
 // src/game/coords.ts
 
-import { BOARD_SIZE, CELL_SIZE, PADDING_TOP, VISIBLE_SIZE } from "./constants";
+import { BOARD_SIZE, CELL_SIZE, PADDING_TOP, PADDING_LEFT, VISIBLE_SIZE } from "./constants";
+
+export function cellCenter(index: number): { x: number; y: number } {
+  const { r, c } = indexToRC(index);
+  const x = PADDING_LEFT + c * CELL_SIZE + CELL_SIZE / 2;
+  const y = PADDING_TOP + r * CELL_SIZE + CELL_SIZE / 2;
+  return { x, y };
+}
+
 
 export type RC = { r: number; c: number };
 
@@ -15,24 +23,15 @@ export function indexToRC(index: number): RC {
 }
 
 /**
- * セルの中心座標（Textやクリック領域の中心）
- */
-export function cellCenter(index: number): { x: number; y: number } {
-  const { r, c } = indexToRC(index);
-  const x = c * CELL_SIZE + CELL_SIZE / 2;
-  const y = PADDING_TOP + r * CELL_SIZE + CELL_SIZE / 2;
-  return { x, y };
-}
-
-/**
  * セルの左上座標（線を引く・矩形を置く等に使える）
  */
 export function cellTopLeft(index: number): { x: number; y: number } {
   const { r, c } = indexToRC(index);
-  const x = c * CELL_SIZE;
+  const x = PADDING_LEFT + c * CELL_SIZE;
   const y = PADDING_TOP + r * CELL_SIZE;
   return { x, y };
 }
+
 
 /**
  * 「中央の3×3（見せかけ盤面）」かどうか
