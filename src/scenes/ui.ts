@@ -17,7 +17,7 @@ export function createStatusUI(scene: Phaser.Scene): {
   hintText: Phaser.GameObjects.Text;
 } {
   const titleText = scene.add
-    .text(WIDTH / 2, 28, "まるばつゲーム", {
+    .text(WIDTH / 2, 28, "Tic-Tac-Toe", {
       fontFamily: "system-ui, sans-serif",
       fontSize: "28px",
       color: COLORS.textMain,

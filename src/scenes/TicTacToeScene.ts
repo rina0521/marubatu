@@ -15,6 +15,8 @@ import { evaluateBoard } from "../game/rules";
 import { drawBoardGrid } from "./drawBoard";
 import { createRestartButton, createStatusUI } from "./ui";
 
+const TARGET_HEIGHT = 90;
+
 export class TicTacToeScene extends Phaser.Scene {
   // --- ゲーム状態（TypeScriptなので明示宣言） ---
   board: Cell[];
@@ -28,7 +30,7 @@ export class TicTacToeScene extends Phaser.Scene {
   hasRevealedOuterMove: boolean;
 
   // --- 表示オブジェクト ---
-  cellTexts: Phaser.GameObjects.Text[];
+  cellImages: Phaser.GameObjects.Image[];
   statusText!: Phaser.GameObjects.Text;
   hintText!: Phaser.GameObjects.Text;
 
@@ -41,7 +43,16 @@ export class TicTacToeScene extends Phaser.Scene {
     this.turnNumber = 1;
     this.hasRevealedOuterMove = false;
 
-    this.cellTexts = [];
+    this.cellImages = [];
+  }
+
+  preload() {
+    this.load.image("barnacle", "/marubatu/assets/barnacle.png");
+    this.load.image("barnacle_bite", "/marubatu/assets/barnacle_bite.png");
+    this.load.image("barnacle_dead", "/marubatu/assets/barnacle_dead.png");
+    this.load.image("ghost","/marubatu/assets/ghost.png");
+    this.load.image("ghost_normal","/marubatu/assets/ghost_normal.png");
+    this.load.image("ghost_dead","/marubatu/assets/ghost_dead.png");
   }
 
   create() {
@@ -63,22 +74,20 @@ export class TicTacToeScene extends Phaser.Scene {
     createRestartButton(this, () => this.resetGame());
 
     // 25セル分のテキスト＋クリック領域
-    this.cellTexts = [];
+    this.cellImages = [];
     for (let idx = 0; idx < this.board.length; idx++) {
       const { x, y } = cellCenter(idx);
 
-      const t = this.add
-        .text(x, y, "", {
-          fontFamily: "system-ui, sans-serif",
-          fontSize: "72px",
-          color: COLORS.textMain,
-        })
-        .setOrigin(0.5);
 
+      const image = this.add
+        .image(x, y, "barnacle")
+        .setVisible(false)
+        .setOrigin(0.5)
+      
       // 外側は“見えにくい世界”にしたいので、印も少し薄め
-      if (isOuterCell(idx)) t.setAlpha(0.7);
+      if (isOuterCell(idx)) image.setAlpha(0.7);
 
-      this.cellTexts.push(t);
+      this.cellImages.push(image);      
 
       // クリック領域（透明）
       const r = this.add
@@ -137,9 +146,9 @@ export class TicTacToeScene extends Phaser.Scene {
 
     if (shouldRevealDelay) {
       this.hasRevealedOuterMove = true;
-      this.statusText.setText("CPU(O) ……");
+      this.statusText.setText("CPU ……");
     } else {
-      this.statusText.setText("CPU(O) 思考中…");
+      this.statusText.setText("CPU 思考中…");
     }
 
     this.time.delayedCall(delay, () => {
@@ -165,32 +174,41 @@ export class TicTacToeScene extends Phaser.Scene {
 
   private placeMark(idx: number, mark: Mark) {
     this.board[idx] = mark;
-    const t = this.cellTexts[idx];
-    t.setText(mark);
+    const image = this.cellImages[idx];
 
-    if (mark === "×") t.setColor(COLORS.x);
-    if (mark === "◯") t.setColor(COLORS.o);
+    if (mark === "×") image.setTexture("ghost");
+    if (mark === "◯") image.setTexture("barnacle");
+    const baseScale = TARGET_HEIGHT / image.height;
+    image.setScale(baseScale);
+    image.setVisible(true);
   }
 
   private finish(res: ReturnType<typeof evaluateBoard>) {
     this.gameOver = true;
 
     if (res.winner === "×") {
-      this.statusText.setText("CPU(×)の勝ち！");
+      this.statusText.setText("CPU wins!");
     } else if (res.winner === "◯") {
-      this.statusText.setText("あなた(◯)の勝ち！");
+      this.statusText.setText("You win!");
     } else {
-      this.statusText.setText("引き分け！");
+      this.statusText.setText("Draw!");
     }
 
     // 勝ちラインをハイライト
-    if (res.done && res.winner && res.line) {
-      for (const idx of res.line) {
-        this.cellTexts[idx].setShadow(0, 0, "#ffffff", 14, true, true);
+    if (res.done && res.winner) {
+      for (let i = 0; i < this.cellImages.length; i++) {
+        const img = this.cellImages[i]
+        if (res.line?.includes(i)) {
+          img.setTexture(res.winner ===
+            "◯" ? "barnacle_bite" : "ghost_normal"
+          )
+        }else{
+          img.setTexture(res.winner === "◯" ? "ghost_dead" : "barnacle_dead")  
+        }
       }
     }
 
-    this.hintText.setText("下のボタンでリスタート");
+    this.hintText.setText("Restart");
   }
 
   private resetGame() {
@@ -200,15 +218,13 @@ export class TicTacToeScene extends Phaser.Scene {
     this.turnNumber = 1;
     this.hasRevealedOuterMove = false;
 
-    for (let i = 0; i < this.cellTexts.length; i++) {
-      const t = this.cellTexts[i];
-      t.setText("");
-      t.setColor(COLORS.textMain);
-      t.setShadow(0, 0, "#000000", 0, false, false);
+    for (let i = 0; i < this.cellImages.length; i++) {
+      const image = this.cellImages[i];
+      image.setVisible(false);
       // 外側は薄いまま
-      t.setAlpha(isOuterCell(i) ? 0.7 : 1);
+      //image.setAlpha(isOuterCell(i) ? 0.7 : 1);
     }
-
+    //this.cellImages.forEach(image => image.setScale(1));
     this.updateStatusText();
   }
 
@@ -216,9 +232,9 @@ export class TicTacToeScene extends Phaser.Scene {
     if (this.gameOver) return;
 
     if (this.turn === "◯") {
-      this.statusText.setText(`あなた(◯)の番です（${this.turnNumber}手目）`);
+      this.statusText.setText(`Your turn（${this.turnNumber}step）`);
     } else {
-      this.statusText.setText(`CPU(×)の番です（${this.turnNumber}手目）`);
+      this.statusText.setText(`CPU's turn（${this.turnNumber}step）`);
     }
   }
 }
