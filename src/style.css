@@ -25,10 +25,11 @@ a:hover {
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
   min-width: 320px;
   min-height: 100vh;
-}
+} 
 
 h1 {
   font-size: 3.2em;
@@ -40,7 +41,20 @@ h1 {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
+
+#app canvas {
+  max-width: 100%;
+  max-height: calc(100vh - 4rem);
+  width: auto;
+  height: auto;
+  display: block;
+} 
 
 .logo {
   height: 6em;
@@ -92,5 +106,29 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+/* Small screen adjustments to reduce large margins on mobile */
+@media (max-width: 600px) {
+  body {
+    /* stop vertical centering so content starts near the top on small screens */
+    align-items: flex-start;
+    padding-top: env(safe-area-inset-top, 0.5rem);
+    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  }
+
+  #app {
+    /* reduce padding and allow content to flow naturally */
+    padding: 1rem;
+    min-height: auto;
+    box-sizing: border-box;
+  }
+
+  #app canvas {
+    /* make canvas fill horizontal space and limit vertical space to avoid large top/bottom gaps */
+    width: 100%;
+    height: auto;
+    max-height: calc(100vh - 2rem);
   }
 }
