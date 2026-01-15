@@ -53,6 +53,9 @@ export class TicTacToeScene extends Phaser.Scene {
     this.load.image("ghost","/marubatu/assets/ghost.png");
     this.load.image("ghost_normal","/marubatu/assets/ghost_normal.png");
     this.load.image("ghost_dead","/marubatu/assets/ghost_dead.png");
+    this.load.image("title", "/marubatu/assets/title.png");
+    this.load.image("restart_button", "/marubatu/assets/restart.png");
+    this.load.image("sparkle", "/marubatu/assets/sparkle.png");
   }
 
   create() {
@@ -179,8 +182,24 @@ export class TicTacToeScene extends Phaser.Scene {
     if (mark === "×") image.setTexture("ghost");
     if (mark === "◯") image.setTexture("barnacle");
     const baseScale = TARGET_HEIGHT / image.height;
-    image.setScale(baseScale);
-    image.setVisible(true);
+  // 下から生えるための基準（足元固定）
+  image.setOrigin(0.5, 0.8);
+
+  // いったん表示位置に置いたまま、縦を0にして隠す
+  image.setVisible(true);
+  image.setScale(baseScale, 0.3);
+
+  // すでに同じセルでtweenが走ってたら止める（連打対策）
+  this.tweens.killTweensOf(image);
+
+  // 下から「にょきっ」
+  this.tweens.add({
+    targets: image,
+    scaleY: baseScale,
+    duration: 140,
+    alpha: 1,
+    ease: "Back.Out", // ちょい弾む。嫌なら "Cubic.Out" とか
+  });
   }
 
   private finish(res: ReturnType<typeof evaluateBoard>) {
@@ -194,29 +213,56 @@ export class TicTacToeScene extends Phaser.Scene {
       this.statusText.setText("Draw!");
     }
 
-    // 勝ちラインをハイライト
-    if (res.done && res.winner) {
-      for (let i = 0; i < this.cellImages.length; i++) {
-        const img = this.cellImages[i]
-        const mark = this.board[i];
-        
-        // 空のセルは変更しない
-        if (mark === null) continue;
-        
-        if (res.line?.includes(i)) {
-          // 勝ちラインのセルは勝者のキャラを表示
-          img.setTexture(mark === "◯" ? "barnacle_bite" : "ghost_normal")
-        } else {
-          // 勝ちラインに含まれないセルは敗者のキャラを表示
-          img.setTexture(mark === "◯" ? "barnacle_dead" : "ghost_dead")  
-        }
-        // スケールを保持
-        const baseScale = TARGET_HEIGHT / img.height;
-        img.setScale(baseScale);
-      }
+// 勝ちラインをハイライト
+if (res.done && res.winner) {
+  for (let i = 0; i < this.cellImages.length; i++) {
+    const img = this.cellImages[i];
+    const mark = this.board[i];
+
+    // 空のセルは変更しない
+    if (mark === null) continue;
+
+    const isWinnerMark = mark === res.winner;      // そのセルの印が勝者側か
+    const isWinLine = !!res.line?.includes(i);     // 勝ちライン上か（キラキラ用）
+
+    if (isWinnerMark) {
+      img.setTexture(
+        isWinLine
+          ? (mark === "◯" ? "barnacle_bite" : "ghost_normal")
+          : (mark === "◯" ? "barnacle_bite" : "ghost_normal")
+      );
+    } else {
+      img.setTexture(mark === "◯" ? "barnacle_dead" : "ghost_dead");
     }
 
-    this.hintText.setText("Restart");
+    // スケールを保持
+    const baseScale = TARGET_HEIGHT / img.height;
+    img.setScale(baseScale);
+
+    // ★ 勝ちラインだけ sparkle を重ねる
+    if (isWinLine) {
+      const sparkle = this.add
+        .image(img.x, img.y, "sparkle")
+        .setOrigin(0.5)
+        .setDepth(img.depth + 1)
+        .setScale(0.03)
+        .setAlpha(0.8);
+
+      this.tweens.add({
+        targets: sparkle,
+        alpha: { from: 0.2, to: 1 },
+        scale: { from: 0.2, to: 0.4 },
+        duration: 200,
+        repeat: 1,
+        ease: "Sine.Out",
+        onComplete: () => sparkle.destroy(),
+      });
+    }
+  }
+}
+
+
+
   }
 
   private resetGame() {
@@ -229,10 +275,7 @@ export class TicTacToeScene extends Phaser.Scene {
     for (let i = 0; i < this.cellImages.length; i++) {
       const image = this.cellImages[i];
       image.setVisible(false);
-      // 外側は薄いまま
-      //image.setAlpha(isOuterCell(i) ? 0.7 : 1);
     }
-    //this.cellImages.forEach(image => image.setScale(1));
     this.updateStatusText();
   }
 
