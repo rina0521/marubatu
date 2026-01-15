@@ -85,7 +85,7 @@ export class TicTacToeScene extends Phaser.Scene {
         .setOrigin(0.5)
       
       // 外側は“見えにくい世界”にしたいので、印も少し薄め
-      if (isOuterCell(idx)) image.setAlpha(0.7);
+      //if (isOuterCell(idx)) image.setAlpha(0.7);
 
       this.cellImages.push(image);      
 
@@ -198,13 +198,21 @@ export class TicTacToeScene extends Phaser.Scene {
     if (res.done && res.winner) {
       for (let i = 0; i < this.cellImages.length; i++) {
         const img = this.cellImages[i]
+        const mark = this.board[i];
+        
+        // 空のセルは変更しない
+        if (mark === null) continue;
+        
         if (res.line?.includes(i)) {
-          img.setTexture(res.winner ===
-            "◯" ? "barnacle_bite" : "ghost_normal"
-          )
-        }else{
-          img.setTexture(res.winner === "◯" ? "ghost_dead" : "barnacle_dead")  
+          // 勝ちラインのセルは勝者のキャラを表示
+          img.setTexture(mark === "◯" ? "barnacle_bite" : "ghost_normal")
+        } else {
+          // 勝ちラインに含まれないセルは敗者のキャラを表示
+          img.setTexture(mark === "◯" ? "barnacle_dead" : "ghost_dead")  
         }
+        // スケールを保持
+        const baseScale = TARGET_HEIGHT / img.height;
+        img.setScale(baseScale);
       }
     }
 
