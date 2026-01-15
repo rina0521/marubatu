@@ -12,16 +12,19 @@ import {
  * 上部のタイトル＆ステータステキストを作る
  */
 export function createStatusUI(scene: Phaser.Scene): {
-  titleText: Phaser.GameObjects.Text;
+  titleImage: Phaser.GameObjects.Image;
   statusText: Phaser.GameObjects.Text;
   hintText: Phaser.GameObjects.Text;
 } {
-  const titleText = scene.add
+  const titleImage = scene.add
+    .image(WIDTH / 2, 28, "title")
+    /*
     .text(WIDTH / 2, 28, "Tic-Tac-Toe", {
       fontFamily: "system-ui, sans-serif",
       fontSize: "28px",
       color: COLORS.textMain,
     })
+    */
     .setOrigin(0.5);
 
   const statusText = scene.add
@@ -36,7 +39,7 @@ export function createStatusUI(scene: Phaser.Scene): {
     .text(
       WIDTH / 2,
       HEIGHT - PADDING_BOTTOM + 20,
-      "下のボタンでリスタート",
+      "",
       {
         fontFamily: "system-ui, sans-serif",
         fontSize: "16px",
@@ -45,7 +48,7 @@ export function createStatusUI(scene: Phaser.Scene): {
     )
     .setOrigin(0.5);
 
-  return { titleText, statusText, hintText };
+  return { titleImage, statusText, hintText };
 }
 
 /**
@@ -74,11 +77,14 @@ export function createRestartButton(
     1
   );
 
-  const label = scene.add.text(0, 0, "リスタート", {
+  const label = scene.add
+  .image(0, 0, "restart_button");
+  /*text(0, 0, "リスタート", {
     fontFamily: "system-ui, sans-serif",
     fontSize: "20px",
     color: COLORS.textMain,
-  }).setOrigin(0.5);
+  })
+    .setOrigin(0.5);*/
 
   const container = scene.add
     .container(x, y, [bg, label])
