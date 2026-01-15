@@ -14,4 +14,5 @@ https://phaser.io/
 - Monster image:
   - Source: https://kenney.nl/assets/platformer-art-extended-enemies
   - License: Creative Commons CC0
-
+- game text image:
+  - Source: https://www.nin-fan.net/tool/string_image.html
