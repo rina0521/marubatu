@@ -34,6 +34,12 @@ export class TicTacToeScene extends Phaser.Scene {
   statusText!: Phaser.GameObjects.Text;
   hintText!: Phaser.GameObjects.Text;
 
+  outerFrame!: Phaser.GameObjects.Graphics;
+
+  outerGridOverlay!: Phaser.GameObjects.Graphics;
+  isOuterGridRevealed = false;
+
+
   constructor() {
     super("TicTacToeScene");
 
@@ -67,6 +73,27 @@ export class TicTacToeScene extends Phaser.Scene {
       weakAlpha: 0.12,
       weakLineWidth: 2,
     });
+  
+    // 盤面グリッド（5×5薄く + 中央3×3強調）
+    drawBoardGrid(this, { weakAlpha: 0.12, weakLineWidth: 2 });
+    // ★ 5×5のセル境界を“後から浮き出させる”ためのオーバーレイ
+    this.outerGridOverlay = this.add.graphics();
+    this.outerGridOverlay.setDepth(10);      // 盤面より上（必要なら調整）
+    this.outerGridOverlay.setAlpha(0);
+    this.outerGridOverlay.setVisible(false);
+
+    this.drawOuterGridOverlay(); // 線を描いておく（透明なだけ）
+
+
+    // ★ 5×5外枠の“浮き出し用オーバーレイ”を作って隠す
+    this.outerFrame = this.add.graphics();
+    this.outerFrame.setDepth(10);      // 盤面より上（UIより下にしたいなら調整）
+    this.outerFrame.setAlpha(0);       // 最初は見えない
+    this.outerFrame.setVisible(false); // 無駄描画を避けたいなら
+
+    // 外枠の矩形を描く（位置は board のセル中心計算に合わせる）
+    this.drawOuterFrame();
+  
 
     // UI
     const ui = createStatusUI(this);
@@ -175,32 +202,139 @@ export class TicTacToeScene extends Phaser.Scene {
     });
   }
 
+private drawOuterGridOverlay() {
+  const CELL = 120;
+  const N = BOARD_SIZE; // 5
+
+  const tl = cellCenter(0);
+  const br = cellCenter(N * N - 1);
+
+  const left = tl.x - CELL / 2;
+  const top = tl.y - CELL / 2;
+  const right = br.x + CELL / 2;
+  const bottom = br.y + CELL / 2;
+
+  this.outerGridOverlay.clear();
+
+  // 線の見た目（外周が無いので少し太めでもOK）
+  this.outerGridOverlay.lineStyle(4, 0xffffff, 1);
+
+  // 縦線：内側だけ（1〜N-1）
+  for (let i = 1; i < N; i++) {
+    const x = left + i * CELL;
+    this.outerGridOverlay.beginPath();
+    this.outerGridOverlay.moveTo(x, top);
+    this.outerGridOverlay.lineTo(x, bottom);
+    this.outerGridOverlay.strokePath();
+  }
+
+  // 横線：内側だけ（1〜N-1）
+  for (let i = 1; i < N; i++) {
+    const y = top + i * CELL;
+    this.outerGridOverlay.beginPath();
+    this.outerGridOverlay.moveTo(left, y);
+    this.outerGridOverlay.lineTo(right, y);
+    this.outerGridOverlay.strokePath();
+  }
+}
+
+private revealOuterGrid() {
+  if (this.isOuterGridRevealed) return;
+  this.isOuterGridRevealed = true;
+
+  this.outerGridOverlay.setVisible(true);
+  this.outerGridOverlay.setAlpha(0);
+  this.outerGridOverlay.setScale(0.995);
+
+  this.tweens.add({
+    targets: this.outerGridOverlay,
+    alpha: { from: 0, to: 0.55 }, // 最終の濃さ。好みで
+    scale: { from: 0.995, to: 1.0 },
+    duration: 420,
+    ease: "Sine.Out",
+  });
+}
+
+
   private placeMark(idx: number, mark: Mark) {
+  if (isOuterCell(idx)) {
+  this.revealOuterGrid();
+}
+
+    // 外側に置かれたら、5×5外枠をふわっと出す（最初の1回だけ）
+    if (isOuterCell(idx)) {
+      this.revealOuterFrame();
+    }
+
     this.board[idx] = mark;
     const image = this.cellImages[idx];
 
     if (mark === "×") image.setTexture("ghost");
     if (mark === "◯") image.setTexture("barnacle");
     const baseScale = TARGET_HEIGHT / image.height;
-  // 下から生えるための基準（足元固定）
-  image.setOrigin(0.5, 0.8);
+    // 下から生えるための基準（足元固定）
+    image.setOrigin(0.5, 0.8);
 
-  // いったん表示位置に置いたまま、縦を0にして隠す
-  image.setVisible(true);
-  image.setScale(baseScale, 0.3);
+    // いったん表示位置に置いたまま、縦を0にして隠す
+    image.setVisible(true);
+    image.setScale(baseScale, 0.3);
 
-  // すでに同じセルでtweenが走ってたら止める（連打対策）
-  this.tweens.killTweensOf(image);
+    // すでに同じセルでtweenが走ってたら止める（連打対策）
+    this.tweens.killTweensOf(image);
 
-  // 下から「にょきっ」
-  this.tweens.add({
-    targets: image,
-    scaleY: baseScale,
-    duration: 140,
-    alpha: 1,
-    ease: "Back.Out", // ちょい弾む。嫌なら "Cubic.Out" とか
-  });
+    // 下から「にょきっ」
+    this.tweens.add({
+      targets: image,
+      scaleY: baseScale,
+      duration: 140,
+      alpha: 1,
+      ease: "Back.Out", // ちょい弾む。嫌なら "Cubic.Out" とか
+    });
   }
+
+private drawOuterFrame() {
+  // あなたのクリック領域が 120×120 なので、セルサイズは 120 とみなす
+  // ※もし drawBoardGrid が別サイズならここを合わせる必要あり（後述）
+  const CELL = 120;
+
+  // cellCenter(0) が 5×5の左上セル中心、cellCenter(24) が右下セル中心という前提
+  const tl = cellCenter(0);
+  const br = cellCenter(24);
+
+  // 外枠の内側がセル境界に来るよう、中心から半セルずつ広げる
+  const left = tl.x - CELL / 2;
+  const top = tl.y - CELL / 2;
+  const width = (br.x - tl.x) + CELL;
+  const height = (br.y - tl.y) + CELL;
+
+  this.outerFrame.clear();
+
+  // “ふわっと”用なので少し太め・薄めから始める
+  this.outerFrame.lineStyle(6, 0xffffff, 1); // 色は白。背景に合わせて調整OK
+  this.outerFrame.strokeRoundedRect(left, top, width, height, 12);
+}
+
+private isOuterFrameRevealed = false; // 追加プロパティ（クラスに）
+
+private revealOuterFrame() {
+  if (this.isOuterFrameRevealed) return;
+  this.isOuterFrameRevealed = true;
+
+  this.outerFrame.setVisible(true);
+  this.outerFrame.setAlpha(0);
+
+  // ふわっと：フェードイン＋少しだけスケール（気配）
+  this.outerFrame.setScale(0.98);
+
+  this.tweens.add({
+    targets: this.outerFrame,
+    alpha: { from: 0, to: 0.9 },
+    scale: { from: 0.98, to: 1.0 },
+    duration: 420,
+    ease: "Sine.Out",
+  });
+}
+
 
   private finish(res: ReturnType<typeof evaluateBoard>) {
     this.gameOver = true;
@@ -266,6 +400,19 @@ if (res.done && res.winner) {
   }
 
   private resetGame() {
+    this.isOuterFrameRevealed = false;
+if (this.outerFrame) {
+  this.outerFrame.setVisible(false);
+  this.outerFrame.setAlpha(0);
+  this.outerFrame.setScale(1);
+}
+this.isOuterGridRevealed = false;
+if (this.outerGridOverlay) {
+  this.outerGridOverlay.setVisible(false);
+  this.outerGridOverlay.setAlpha(0);
+  this.outerGridOverlay.setScale(1);
+}
+
     this.board = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, () => null);
     this.turn = "◯";
     this.gameOver = false;
