@@ -1,5 +1,9 @@
 # marubatu
 
+## Game Start
+
+https://rina0521.github.io/marubatu/
+
 ## Tech Stack
 
 - Game Engine: Phaser 3
